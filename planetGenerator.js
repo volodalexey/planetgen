@@ -311,8 +311,6 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
       colors = [],
       uvs = [];
 
-	var multimat = new BABYLON.MultiMaterial("multi", scene);
-
   for (var n = 0; n < sdIco.nodes.length; n++) {
     var centroids = [],
         firstCentroid,
@@ -368,15 +366,6 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
 
   var polygon = new BABYLON.Mesh("planet", scene);
   vertexData.applyToMesh(polygon);
-	polygon.material = multimat;
-
-	var verticesCount = polygon.getTotalVertices(),
-			ofs = 0;
-
-	for (var n = 0; n < sdIco.nodes.length; n++) {
-		polygon.subMeshes.push(new BABYLON.SubMesh(n, 0, verticesCount, ofs, sdIco.nodes[n].f.length, polygon));
-		ofs += sdIco.nodes[n].f.length;
-	}
 
 
   return polygon;
