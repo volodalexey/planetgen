@@ -311,10 +311,12 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
       colors = [],
       uvs = [];
 
+	// Generate dual polyhedron position and face indices
   for (var n = 0; n < sdIco.nodes.length; n++) {
     var centroids = [],
         firstCentroid,
         avgDistance = 0;
+		var color = new BABYLON.Color4(0, Math.random() * 0.5, Math.random() * 1, 0);
 
 		// Get all the centroids of the faces adjacent to this vertex
     for (var f = 0; f < sdIco.nodes[n].f.length; f++) {
@@ -326,23 +328,27 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
       else avgDistance += (BABYLON.Vector3.Distance(firstCentroid, centroid) / sdIco.nodes[n].f.length);
 
       centroids.push(centroid);
+			colors = colors.concat(color.asArray());
     }
 
 
-		// Lines 335 - 353 : Order to the centroids to be able to generate triangles
+		// Order the centroids to be able to generate triangles with simple index calculations
     var relativeZeroIndex = positions.length/3,
         linked = new Array(centroids.length),
-        currentCentroid = 0;
+        currentCentroid = 0,
+				normalPoints = []
 
     for(var i = 0; i < linked.length; i++) linked[i] = false;
     linked[currentCentroid] = true;
     positions = positions.concat(centroids[currentCentroid].asArray());
+		normalPoints.push(centroids[currentCentroid]);
 
     while(linked.indexOf(false) !== -1) {
       for(var c = 0; c < centroids.length; c++) {
         if(c == currentCentroid || linked[c]) continue;
         if(BABYLON.Vector3.Distance(centroids[c], centroids[currentCentroid]) < avgDistance) {
           positions = positions.concat(centroids[c].asArray());
+					if(normalPoints.length < 3) normalPoints.push(centroids[c])
           linked[c] = true;
           currentCentroid = c;
           break;
@@ -350,10 +356,17 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
       }
     }
 
+		// Calculate whether the triangulation should be flipped or not depending on the direction of the normal
+		var dpFacePlane = BABYLON.Plane.FromPoints(normalPoints[0], normalPoints[2], normalPoints[1]),
+		 		dpFaceCentroid = calculateFaceCentroid(normalPoints[0], normalPoints[2], normalPoints[1]),
+		 		vecToCenter = dpFaceCentroid.divide(dpFacePlane.normal),
+		 		flipFace = ((vecToCenter.x > 0 || vecToCenter.x < -scale) &&
+										(vecToCenter.y > 0 || vecToCenter.y < -scale) &&
+									  (vecToCenter.z > 0 || vecToCenter.z < -scale));
+
     for(var i = relativeZeroIndex; i < (positions.length/3) - 2; i++) {
-			// Render the faces both ways (I can't figure out why some need to be rendered backwards)
-      indices.push(i+1, i+2, relativeZeroIndex);
-      indices.push(relativeZeroIndex, i+2, i+1);
+     	if(flipFace) indices.push(i+1, i+2, relativeZeroIndex);
+      else indices.push(relativeZeroIndex, i+2, i+1);
     }
   }
 
@@ -363,47 +376,13 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
   vertexData.positions = positions;
   vertexData.indices = indices;
   vertexData.normals = normals;
+	vertexData.colors = colors;
 
   var polygon = new BABYLON.Mesh("planet", scene);
   vertexData.applyToMesh(polygon);
 
-
   return polygon;
 }
-
-function createPlanetIcosahedron(scale, subdivision, scene) {
-	var planet = generateSubdividedIcosahedron(scale, subdivision);
-  var positions = [],
-      indices = [],
-      normals = [],
-      colors = [];
-
-	var multimat = new BABYLON.MultiMaterial("multi", scene);
-
-	for(var n = 0; n < planet.nodes.length; n++) {
-		positions = positions.concat(planet.nodes[n].p.scale(scale).asArray());
-	}
-
-	for(var f = 0; f < planet.faces.length; f++) {
-		indices = indices.concat(planet.faces[f].n);
-	}
-
-  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-
-  var vertexData = new BABYLON.VertexData();
-  vertexData.positions = positions;
-  vertexData.indices = indices;
-  vertexData.normals = normals;
-
-  var polygon = new BABYLON.Mesh("planet", scene);
-  vertexData.applyToMesh(polygon);
-
-	var verticesCount = polygon.getTotalVertices(),
-			ofs = 0;
-
-  return polygon;
-}
-
 
 var createScene = function() {
   if (BABYLON.Engine.isSupported()) {
@@ -412,34 +391,28 @@ var createScene = function() {
     var scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color3( 0.5, 0.5, 0.5);
 
-    // camera
+    // Camera
     var camera = new BABYLON.ArcRotateCamera("camera1",  0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene);
     camera.setPosition(new BABYLON.Vector3(-60, 0, 0));
     camera.attachControl(canvas, true);
 
-
+		// Sun & Moon
     var sun = new BABYLON.HemisphericLight("sun", new BABYLON.Vector3(0, 0, 1), scene);
-    sun.intensity = 1;
+    sun.intensity = 0.6;
     var moon = new BABYLON.HemisphericLight("moon", new BABYLON.Vector3(0, 0, -1), scene);
     moon.intensity = 0.2;
 
-    var mat = new BABYLON.StandardMaterial("mat1", scene);
-    mat.alpha = 1.0;
-    mat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 1.0);
-
-		// var polygon = createPlanetIcosahedron(5, 15, scene); //This line renders the HEX planet
-    var polygon = createPlanetCompoundIcosahedron(5, 15, scene); //This line renders the Icosahedron planet
+    var polygon = createPlanetCompoundIcosahedron(20, 20, scene); //This line renders the Icosahedron planet
     polygon.convertToFlatShadedMesh();
-    polygon.material = mat;
     polygon.position.x = 0;
     polygon.position.y = 0;
 
     camera.attachControl(canvas);
 
-    // scene.registerBeforeRender(function () {
-  	//   polygon.rotation.y += -0.0005;
-  	//   polygon.rotation.x += -0.0005 / 4;
-    // });
+    scene.registerBeforeRender(function () {
+  	  polygon.rotation.y += -0.0005;
+  	  polygon.rotation.x += -0.0005 / 4;
+    });
 
     engine.runRenderLoop(function () {
         scene.render();
