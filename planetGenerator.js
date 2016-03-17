@@ -1,8 +1,23 @@
-var container, stats;
-
+var container;
 var camera, controls, scene, renderer;
 
-var cross;
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+
+function pickTile( event ) {
+	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+  raycaster.setFromCamera( mouse, camera );
+  var intersects = raycaster.intersectObjects( scene.children );
+
+  for ( var i = 0; i < intersects.length; i++ ) {
+    intersects[i].face.color.copy(new THREE.Color(0xf2b640));
+    intersects[i].object.geometry.colorsNeedUpdate = true;
+  }
+
+  render();
+}
 
 init();
 animate();
@@ -42,6 +57,7 @@ function init() {
   container.appendChild( renderer.domElement );
 
   window.addEventListener( 'resize', onWindowResize, false );
+  window.addEventListener( 'click', pickTile, false );
 
   render();
 
@@ -115,6 +131,8 @@ function createPlanetMesh(scale, degree, scene)
   mesh.position.z = 0;
   mesh.updateMatrix();
   mesh.matrixAutoUpdate = false;
+
+  mesh.geometry.dynamic = true;
   scene.add( mesh );
 }
 
