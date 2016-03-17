@@ -308,8 +308,7 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
       line_pos = [],
       indices = [],
       normals = [],
-      colors = [],
-      uvs = [];
+      colors = [];
 
   // Generate dual polyhedron position and face indices
   for (var n = 0; n < sdIco.nodes.length; n++) {
@@ -321,9 +320,7 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
     // Get all the centroids of the faces adjacent to this vertex
     for (var f = 0; f < sdIco.nodes[n].f.length; f++) {
       var nodes = sdIco.faces[sdIco.nodes[n].f[f]].n;
-      var centroid = calculateFaceCentroid(sdIco.nodes[nodes[0]].p,
-                                           sdIco.nodes[nodes[1]].p,
-                                           sdIco.nodes[nodes[2]].p);
+      var centroid = sdIco.faces[sdIco.nodes[n].f[f]].centroid;
       if (f === 0) firstCentroid = centroid;
       else avgDistance += (BABYLON.Vector3.Distance(firstCentroid, centroid) / sdIco.nodes[n].f.length);
 
@@ -336,7 +333,7 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
     var relativeZeroIndex = positions.length/3,
         linked = new Array(centroids.length),
         currentCentroid = 0,
-        normalPoints = []
+        normalPoints = [];
 
     for(var i = 0; i < linked.length; i++) linked[i] = false;
     linked[currentCentroid] = true;
@@ -358,11 +355,8 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
 
     // Calculate whether the triangulation should be flipped or not depending on the direction of the normal
     var dpFacePlane = BABYLON.Plane.FromPoints(normalPoints[0], normalPoints[2], normalPoints[1]),
-         dpFaceCentroid = calculateFaceCentroid(normalPoints[0], normalPoints[2], normalPoints[1]),
-         vecToCenter = dpFaceCentroid.divide(dpFacePlane.normal),
-         flipFace = ((vecToCenter.x > 0 || vecToCenter.x < -scale) &&
-                    (vecToCenter.y > 0 || vecToCenter.y < -scale) &&
-                    (vecToCenter.z > 0 || vecToCenter.z < -scale));
+        dpDot = BABYLON.Vector3.Dot(normalPoints[0].clone().normalize(), dpFacePlane.normal),
+        flipFace = dpDot > 0;
 
     for(var i = relativeZeroIndex; i < (positions.length/3) - 2; i++) {
        if(flipFace) indices.push(i+1, i+2, relativeZeroIndex);
@@ -380,6 +374,7 @@ function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
 
   var polygon = new BABYLON.Mesh("planet", scene);
   vertexData.applyToMesh(polygon);
+  polygon.convertToFlatShadedMesh();
 
   return polygon;
 }
@@ -403,9 +398,6 @@ var createScene = function() {
     moon.intensity = 0.2;
 
     var polygon = createPlanetCompoundIcosahedron(20, 10, scene); //This line renders the Icosahedron planet
-    polygon.convertToFlatShadedMesh();
-    polygon.position.x = 0;
-    polygon.position.y = 0;
 
     camera.attachControl(canvas);
 
