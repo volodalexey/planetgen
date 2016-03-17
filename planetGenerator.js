@@ -1,3 +1,122 @@
+var container, stats;
+
+var camera, controls, scene, renderer;
+
+var cross;
+
+init();
+animate();
+
+function init() {
+  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+  camera.position.z = 600;
+
+  controls = new THREE.OrbitControls( camera );
+  controls.addEventListener( 'change', render );
+
+  scene = new THREE.Scene();
+
+
+  // lights
+
+  light = new THREE.DirectionalLight( 0xffffff );
+  light.position.set( 1, 1, 1 );
+  scene.add( light );
+
+  light = new THREE.DirectionalLight( 0x002288 );
+  light.position.set( -1, -1, -1 );
+  scene.add( light );
+
+  light = new THREE.AmbientLight( 0x222222 );
+  scene.add( light );
+
+  //Create the planet mesh
+  createPlanetMesh(300, 40, scene);
+
+  // renderer
+  renderer = new THREE.WebGLRenderer( { antialias: false } );
+  renderer.setClearColor( new THREE.Color(0.5, 0.5, 0.5), 1 );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+  container = document.getElementById( 'container' );
+  container.appendChild( renderer.domElement );
+
+  window.addEventListener( 'resize', onWindowResize, false );
+
+  render();
+
+}
+
+function onWindowResize() {
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+  render();
+
+}
+
+function animate() {
+  requestAnimationFrame( animate );
+  controls.update();
+}
+
+function render() {
+  renderer.render( scene, camera );
+}
+
+function createPlanetMesh(scale, degree, scene)
+{
+  var material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
+  var geometry = new THREE.Geometry();
+  var sdIco = generateSubdividedIcosahedron(scale, degree);
+
+  for (var i = 0; i < sdIco.nodes.length; ++i)
+  {
+    var node = sdIco.nodes[i];
+    var faceIndex = node.f[0];
+    for (var j = 1; j < node.f.length - 1; ++j)
+    {
+      faceIndex = findNextFaceIndex(sdIco, i, faceIndex);
+      var k = node.f.indexOf(faceIndex);
+      node.f[k] = node.f[j];
+      node.f[j] = faceIndex;
+    }
+  }
+
+  // Generate dual polyhedron position and face indices
+  for (var n = 0; n < sdIco.nodes.length; n++) {
+    var relativeZeroIndex = geometry.vertices.length;
+
+    var color = new THREE.Color(0, Math.random() * 0.5, Math.random() * 1);
+
+    // Get all the centroids of the faces adjacent to this vertex
+    for (var f = 0; f < sdIco.nodes[n].f.length; f++) {
+      var nodes = sdIco.faces[sdIco.nodes[n].f[f]].n;
+      var centroid = sdIco.faces[sdIco.nodes[n].f[f]].centroid;
+      geometry.vertices.push(centroid);
+    }
+
+    for(var i = relativeZeroIndex; i < geometry.vertices.length - 2; i++) {
+      var face = new THREE.Face3(relativeZeroIndex, i+2, i+1);
+      face.color = color;
+      geometry.faces.push(face);
+    }
+  }
+
+  geometry.mergeVertices();
+  geometry.computeFaceNormals();
+
+  var mesh = new THREE.Mesh( geometry, material );
+  mesh.position.x = 0;
+  mesh.position.y = 0;
+  mesh.position.z = 0;
+  mesh.updateMatrix();
+  mesh.matrixAutoUpdate = false;
+  scene.add( mesh );
+}
 
 function generateIcosahedron()
 {
@@ -7,18 +126,18 @@ function generateIcosahedron()
 
   nodes =
   [
-    { p: new BABYLON.Vector3(0, +dv, +du), e: [], f: [] },
-    { p: new BABYLON.Vector3(0, +dv, -du), e: [], f: [] },
-    { p: new BABYLON.Vector3(0, -dv, +du), e: [], f: [] },
-    { p: new BABYLON.Vector3(0, -dv, -du), e: [], f: [] },
-    { p: new BABYLON.Vector3(+du, 0, +dv), e: [], f: [] },
-    { p: new BABYLON.Vector3(-du, 0, +dv), e: [], f: [] },
-    { p: new BABYLON.Vector3(+du, 0, -dv), e: [], f: [] },
-    { p: new BABYLON.Vector3(-du, 0, -dv), e: [], f: [] },
-    { p: new BABYLON.Vector3(+dv, +du, 0), e: [], f: [] },
-    { p: new BABYLON.Vector3(+dv, -du, 0), e: [], f: [] },
-    { p: new BABYLON.Vector3(-dv, +du, 0), e: [], f: [] },
-    { p: new BABYLON.Vector3(-dv, -du, 0), e: [], f: [] },
+    { p: new THREE.Vector3(0, +dv, +du), e: [], f: [] },
+    { p: new THREE.Vector3(0, +dv, -du), e: [], f: [] },
+    { p: new THREE.Vector3(0, -dv, +du), e: [], f: [] },
+    { p: new THREE.Vector3(0, -dv, -du), e: [], f: [] },
+    { p: new THREE.Vector3(+du, 0, +dv), e: [], f: [] },
+    { p: new THREE.Vector3(-du, 0, +dv), e: [], f: [] },
+    { p: new THREE.Vector3(+du, 0, -dv), e: [], f: [] },
+    { p: new THREE.Vector3(-du, 0, -dv), e: [], f: [] },
+    { p: new THREE.Vector3(+dv, +du, 0), e: [], f: [] },
+    { p: new THREE.Vector3(+dv, -du, 0), e: [], f: [] },
+    { p: new THREE.Vector3(-dv, +du, 0), e: [], f: [] },
+    { p: new THREE.Vector3(-dv, -du, 0), e: [], f: [] },
   ];
 
   edges =
@@ -98,192 +217,192 @@ function generateSubdividedIcosahedron(scale, degree)
 {
   var icosahedron = generateIcosahedron();
 
-  var nodes = [];
-  for (var i = 0; i < icosahedron.nodes.length; ++i)
-  {
-    nodes.push({ p: icosahedron.nodes[i].p, e: [], f: [] });
-  }
+	var nodes = [];
+	for (var i = 0; i < icosahedron.nodes.length; ++i)
+	{
+		nodes.push({ p: icosahedron.nodes[i].p, e: [], f: [] });
+	}
 
-  var edges = [];
-  for (var i = 0; i < icosahedron.edges.length; ++i)
-  {
-    var edge = icosahedron.edges[i];
-    edge.subdivided_n = [];
-    edge.subdivided_e = [];
-    var n0 = icosahedron.nodes[edge.n[0]];
-    var n1 = icosahedron.nodes[edge.n[1]];
-    var p0 = n0.p;
-    var p1 = n1.p;
-    var delta = p1.subtract(p0);
-    nodes[edge.n[0]].e.push(edges.length);
-    var priorNodeIndex = edge.n[0];
-    for (var s = 1; s < degree; ++s)
-    {
-      var edgeIndex = edges.length;
-      var nodeIndex = nodes.length;
-      edge.subdivided_e.push(edgeIndex);
-      edge.subdivided_n.push(nodeIndex);
-      edges.push({ n: [ priorNodeIndex, nodeIndex ], f: [] });
-      priorNodeIndex = nodeIndex;
-      nodes.push({ p: BABYLON.Vector3.Lerp(p0, p1, s / degree), e: [ edgeIndex, edgeIndex + 1 ], f: [] });
-    }
-    edge.subdivided_e.push(edges.length);
-    nodes[edge.n[1]].e.push(edges.length);
-    edges.push({ n: [ priorNodeIndex, edge.n[1] ], f: [] });
-  }
+	var edges = [];
+	for (var i = 0; i < icosahedron.edges.length; ++i)
+	{
+		var edge = icosahedron.edges[i];
+		edge.subdivided_n = [];
+		edge.subdivided_e = [];
+		var n0 = icosahedron.nodes[edge.n[0]];
+		var n1 = icosahedron.nodes[edge.n[1]];
+		var p0 = n0.p;
+		var p1 = n1.p;
+		var delta = p1.clone().sub(p0);
+		nodes[edge.n[0]].e.push(edges.length);
+		var priorNodeIndex = edge.n[0];
+		for (var s = 1; s < degree; ++s)
+		{
+			var edgeIndex = edges.length;
+			var nodeIndex = nodes.length;
+			edge.subdivided_e.push(edgeIndex);
+			edge.subdivided_n.push(nodeIndex);
+			edges.push({ n: [ priorNodeIndex, nodeIndex ], f: [] });
+			priorNodeIndex = nodeIndex;
+			nodes.push({ p: slerp(p0, p1, s / degree), e: [ edgeIndex, edgeIndex + 1 ], f: [] });
+		}
+		edge.subdivided_e.push(edges.length);
+		nodes[edge.n[1]].e.push(edges.length);
+		edges.push({ n: [ priorNodeIndex, edge.n[1] ], f: [] });
+	}
 
-  var faces = [];
-  for (var i = 0; i < icosahedron.faces.length; ++i)
-  {
-    var face = icosahedron.faces[i];
-    var edge0 = icosahedron.edges[face.e[0]];
-    var edge1 = icosahedron.edges[face.e[1]];
-    var edge2 = icosahedron.edges[face.e[2]];
-    var point0 = icosahedron.nodes[face.n[0]].p;
-    var point1 = icosahedron.nodes[face.n[1]].p;
-    var point2 = icosahedron.nodes[face.n[2]].p;
-    var delta = point1.subtract(point0);
+	var faces = [];
+	for (var i = 0; i < icosahedron.faces.length; ++i)
+	{
+		var face = icosahedron.faces[i];
+		var edge0 = icosahedron.edges[face.e[0]];
+		var edge1 = icosahedron.edges[face.e[1]];
+		var edge2 = icosahedron.edges[face.e[2]];
+		var point0 = icosahedron.nodes[face.n[0]].p;
+		var point1 = icosahedron.nodes[face.n[1]].p;
+		var point2 = icosahedron.nodes[face.n[2]].p;
+		var delta = point1.clone().sub(point0);
 
-    var getEdgeNode0 = (face.n[0] === edge0.n[0])
-      ? function(k) { return edge0.subdivided_n[k]; }
-      : function(k) { return edge0.subdivided_n[degree - 2 - k]; };
-    var getEdgeNode1 = (face.n[1] === edge1.n[0])
-      ? function(k) { return edge1.subdivided_n[k]; }
-      : function(k) { return edge1.subdivided_n[degree - 2 - k]; };
-    var getEdgeNode2 = (face.n[0] === edge2.n[0])
-      ? function(k) { return edge2.subdivided_n[k]; }
-      : function(k) { return edge2.subdivided_n[degree - 2 - k]; };
+		var getEdgeNode0 = (face.n[0] === edge0.n[0])
+			? function(k) { return edge0.subdivided_n[k]; }
+			: function(k) { return edge0.subdivided_n[degree - 2 - k]; };
+		var getEdgeNode1 = (face.n[1] === edge1.n[0])
+			? function(k) { return edge1.subdivided_n[k]; }
+			: function(k) { return edge1.subdivided_n[degree - 2 - k]; };
+		var getEdgeNode2 = (face.n[0] === edge2.n[0])
+			? function(k) { return edge2.subdivided_n[k]; }
+			: function(k) { return edge2.subdivided_n[degree - 2 - k]; };
 
-    var faceNodes = [];
-    faceNodes.push(face.n[0]);
-    for (var j = 0; j < edge0.subdivided_n.length; ++j)
-      faceNodes.push(getEdgeNode0(j));
-    faceNodes.push(face.n[1]);
-    for (var s = 1; s < degree; ++s)
-    {
-      faceNodes.push(getEdgeNode2(s - 1));
-      var p0 = nodes[getEdgeNode2(s - 1)].p;
-      var p1 = nodes[getEdgeNode1(s - 1)].p;
-      for (var t = 1; t < degree - s; ++t)
-      {
-        faceNodes.push(nodes.length);
-        nodes.push({ p: BABYLON.Vector3.Lerp(p0, p1, t / (degree - s)), e: [], f: [], });
-      }
-      faceNodes.push(getEdgeNode1(s - 1));
-    }
-    faceNodes.push(face.n[2]);
+		var faceNodes = [];
+		faceNodes.push(face.n[0]);
+		for (var j = 0; j < edge0.subdivided_n.length; ++j)
+			faceNodes.push(getEdgeNode0(j));
+		faceNodes.push(face.n[1]);
+		for (var s = 1; s < degree; ++s)
+		{
+			faceNodes.push(getEdgeNode2(s - 1));
+			var p0 = nodes[getEdgeNode2(s - 1)].p;
+			var p1 = nodes[getEdgeNode1(s - 1)].p;
+			for (var t = 1; t < degree - s; ++t)
+			{
+				faceNodes.push(nodes.length);
+				nodes.push({ p: slerp(p0, p1, t / (degree - s)), e: [], f: [], });
+			}
+			faceNodes.push(getEdgeNode1(s - 1));
+		}
+		faceNodes.push(face.n[2]);
 
-    var getEdgeEdge0 = (face.n[0] === edge0.n[0])
-      ? function(k) { return edge0.subdivided_e[k]; }
-      : function(k) { return edge0.subdivided_e[degree - 1 - k]; };
-    var getEdgeEdge1 = (face.n[1] === edge1.n[0])
-      ? function(k) { return edge1.subdivided_e[k]; }
-      : function(k) { return edge1.subdivided_e[degree - 1 - k]; };
-    var getEdgeEdge2 = (face.n[0] === edge2.n[0])
-      ? function(k) { return edge2.subdivided_e[k]; }
-      : function(k) { return edge2.subdivided_e[degree - 1 - k]; };
+		var getEdgeEdge0 = (face.n[0] === edge0.n[0])
+			? function(k) { return edge0.subdivided_e[k]; }
+			: function(k) { return edge0.subdivided_e[degree - 1 - k]; };
+		var getEdgeEdge1 = (face.n[1] === edge1.n[0])
+			? function(k) { return edge1.subdivided_e[k]; }
+			: function(k) { return edge1.subdivided_e[degree - 1 - k]; };
+		var getEdgeEdge2 = (face.n[0] === edge2.n[0])
+			? function(k) { return edge2.subdivided_e[k]; }
+			: function(k) { return edge2.subdivided_e[degree - 1 - k]; };
 
-    var faceEdges0 = [];
-    for (var j = 0; j < degree; ++j)
-      faceEdges0.push(getEdgeEdge0(j));
-    var nodeIndex = degree + 1;
-    for (var s = 1; s < degree; ++s)
-    {
-      for (var t = 0; t < degree - s; ++t)
-      {
-        faceEdges0.push(edges.length);
-        var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + 1], ], f: [], };
-        nodes[edge.n[0]].e.push(edges.length);
-        nodes[edge.n[1]].e.push(edges.length);
-        edges.push(edge);
-        ++nodeIndex;
-      }
-      ++nodeIndex;
-    }
+		var faceEdges0 = [];
+		for (var j = 0; j < degree; ++j)
+			faceEdges0.push(getEdgeEdge0(j));
+		var nodeIndex = degree + 1;
+		for (var s = 1; s < degree; ++s)
+		{
+			for (var t = 0; t < degree - s; ++t)
+			{
+				faceEdges0.push(edges.length);
+				var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + 1], ], f: [], };
+				nodes[edge.n[0]].e.push(edges.length);
+				nodes[edge.n[1]].e.push(edges.length);
+				edges.push(edge);
+				++nodeIndex;
+			}
+			++nodeIndex;
+		}
 
-    var faceEdges1 = [];
-    nodeIndex = 1;
-    for (var s = 0; s < degree; ++s)
-    {
-      for (var t = 1; t < degree - s; ++t)
-      {
-        faceEdges1.push(edges.length);
-        var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s], ], f: [], };
-        nodes[edge.n[0]].e.push(edges.length);
-        nodes[edge.n[1]].e.push(edges.length);
-        edges.push(edge);
-        ++nodeIndex;
-      }
-      faceEdges1.push(getEdgeEdge1(s));
-      nodeIndex += 2;
-    }
+		var faceEdges1 = [];
+		nodeIndex = 1;
+		for (var s = 0; s < degree; ++s)
+		{
+			for (var t = 1; t < degree - s; ++t)
+			{
+				faceEdges1.push(edges.length);
+				var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s], ], f: [], };
+				nodes[edge.n[0]].e.push(edges.length);
+				nodes[edge.n[1]].e.push(edges.length);
+				edges.push(edge);
+				++nodeIndex;
+			}
+			faceEdges1.push(getEdgeEdge1(s));
+			nodeIndex += 2;
+		}
 
-    var faceEdges2 = [];
-    nodeIndex = 1;
-    for (var s = 0; s < degree; ++s)
-    {
-      faceEdges2.push(getEdgeEdge2(s));
-      for (var t = 1; t < degree - s; ++t)
-      {
-        faceEdges2.push(edges.length);
-        var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s + 1], ], f: [], };
-        nodes[edge.n[0]].e.push(edges.length);
-        nodes[edge.n[1]].e.push(edges.length);
-        edges.push(edge);
-        ++nodeIndex;
-      }
-      nodeIndex += 2;
-    }
+		var faceEdges2 = [];
+		nodeIndex = 1;
+		for (var s = 0; s < degree; ++s)
+		{
+			faceEdges2.push(getEdgeEdge2(s));
+			for (var t = 1; t < degree - s; ++t)
+			{
+				faceEdges2.push(edges.length);
+				var edge = { n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s + 1], ], f: [], };
+				nodes[edge.n[0]].e.push(edges.length);
+				nodes[edge.n[1]].e.push(edges.length);
+				edges.push(edge);
+				++nodeIndex;
+			}
+			nodeIndex += 2;
+		}
 
-    nodeIndex = 0;
-    edgeIndex = 0;
-    for (var s = 0; s < degree; ++s)
-    {
-      for (t = 1; t < degree - s + 1; ++t)
-      {
-        var subFace = {
-          n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + 1], faceNodes[nodeIndex + degree - s + 1], ],
-          e: [ faceEdges0[edgeIndex], faceEdges1[edgeIndex], faceEdges2[edgeIndex], ], };
-        nodes[subFace.n[0]].f.push(faces.length);
-        nodes[subFace.n[1]].f.push(faces.length);
-        nodes[subFace.n[2]].f.push(faces.length);
-        edges[subFace.e[0]].f.push(faces.length);
-        edges[subFace.e[1]].f.push(faces.length);
-        edges[subFace.e[2]].f.push(faces.length);
-        faces.push(subFace);
-        ++nodeIndex;
-        ++edgeIndex;
-      }
-      ++nodeIndex;
-    }
+		nodeIndex = 0;
+		edgeIndex = 0;
+		for (var s = 0; s < degree; ++s)
+		{
+			for (t = 1; t < degree - s + 1; ++t)
+			{
+				var subFace = {
+					n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + 1], faceNodes[nodeIndex + degree - s + 1], ],
+					e: [ faceEdges0[edgeIndex], faceEdges1[edgeIndex], faceEdges2[edgeIndex], ], };
+				nodes[subFace.n[0]].f.push(faces.length);
+				nodes[subFace.n[1]].f.push(faces.length);
+				nodes[subFace.n[2]].f.push(faces.length);
+				edges[subFace.e[0]].f.push(faces.length);
+				edges[subFace.e[1]].f.push(faces.length);
+				edges[subFace.e[2]].f.push(faces.length);
+				faces.push(subFace);
+				++nodeIndex;
+				++edgeIndex;
+			}
+			++nodeIndex;
+		}
 
-    nodeIndex = 1;
-    edgeIndex = 0;
-    for (var s = 1; s < degree; ++s)
-    {
-      for (t = 1; t < degree - s + 1; ++t)
-      {
-        var subFace = {
-          n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s + 2], faceNodes[nodeIndex + degree - s + 1], ],
-          e: [ faceEdges2[edgeIndex + 1], faceEdges0[edgeIndex + degree - s + 1], faceEdges1[edgeIndex], ], };
-        nodes[subFace.n[0]].f.push(faces.length);
-        nodes[subFace.n[1]].f.push(faces.length);
-        nodes[subFace.n[2]].f.push(faces.length);
-        edges[subFace.e[0]].f.push(faces.length);
-        edges[subFace.e[1]].f.push(faces.length);
-        edges[subFace.e[2]].f.push(faces.length);
-        faces.push(subFace);
-        ++nodeIndex;
-        ++edgeIndex;
-      }
-      nodeIndex += 2;
-      edgeIndex += 1;
-    }
-  }
+		nodeIndex = 1;
+		edgeIndex = 0;
+		for (var s = 1; s < degree; ++s)
+		{
+			for (t = 1; t < degree - s + 1; ++t)
+			{
+				var subFace = {
+					n: [ faceNodes[nodeIndex], faceNodes[nodeIndex + degree - s + 2], faceNodes[nodeIndex + degree - s + 1], ],
+					e: [ faceEdges2[edgeIndex + 1], faceEdges0[edgeIndex + degree - s + 1], faceEdges1[edgeIndex], ], };
+				nodes[subFace.n[0]].f.push(faces.length);
+				nodes[subFace.n[1]].f.push(faces.length);
+				nodes[subFace.n[2]].f.push(faces.length);
+				edges[subFace.e[0]].f.push(faces.length);
+				edges[subFace.e[1]].f.push(faces.length);
+				edges[subFace.e[2]].f.push(faces.length);
+				faces.push(subFace);
+				++nodeIndex;
+				++edgeIndex;
+			}
+			nodeIndex += 2;
+			edgeIndex += 1;
+		}
+	}
 
-  // Project all of our points onto the unit sphere
+  //Project all of our points onto the unit sphere
   nodes.map(function(n) {
-    n.p.normalize().scaleInPlace(scale);
+    n.p.normalize().multiplyScalar(scale);
   });
 
   faces.map(function(f) {
@@ -295,121 +414,30 @@ function generateSubdividedIcosahedron(scale, degree)
 
 function calculateFaceCentroid(pa, pb, pc)
 {
-  var vabHalf = pb.subtract(pa).scale(1.0/2.0);
-  var pabHalf = pa.add(vabHalf);
-  var centroid = pc.subtract(pabHalf).scale(1.0/3.0).add(pabHalf);
+  var vabHalf = pb.clone().sub(pa).multiplyScalar(1.0/2.0);
+  var pabHalf = pa.clone().add(vabHalf);
+  var centroid = pc.clone().sub(pabHalf).multiplyScalar(1.0/3.0).add(pabHalf);
   return centroid;
 }
 
-function createPlanetCompoundIcosahedron(scale, subdivision, scene) {
-  var sdIco = generateSubdividedIcosahedron(scale, subdivision);
-
-  var positions = [],
-      line_pos = [],
-      indices = [],
-      normals = [],
-      colors = [];
-
-  // Generate dual polyhedron position and face indices
-  for (var n = 0; n < sdIco.nodes.length; n++) {
-    var centroids = [],
-        firstCentroid,
-        avgDistance = 0;
-    var color = new BABYLON.Color4(0, Math.random() * 0.5, Math.random() * 1, 0);
-
-    // Get all the centroids of the faces adjacent to this vertex
-    for (var f = 0; f < sdIco.nodes[n].f.length; f++) {
-      var nodes = sdIco.faces[sdIco.nodes[n].f[f]].n;
-      var centroid = sdIco.faces[sdIco.nodes[n].f[f]].centroid;
-      if (f === 0) firstCentroid = centroid;
-      else avgDistance += (BABYLON.Vector3.Distance(firstCentroid, centroid) / sdIco.nodes[n].f.length);
-
-      centroids.push(centroid);
-      colors = colors.concat(color.asArray());
-    }
-
-
-    // Order the centroids to be able to generate triangles with simple index calculations
-    var relativeZeroIndex = positions.length/3,
-        linked = new Array(centroids.length),
-        currentCentroid = 0,
-        normalPoints = [];
-
-    for(var i = 0; i < linked.length; i++) linked[i] = false;
-    linked[currentCentroid] = true;
-    positions = positions.concat(centroids[currentCentroid].asArray());
-    normalPoints.push(centroids[currentCentroid]);
-
-    while(linked.indexOf(false) !== -1) {
-      for(var c = 0; c < centroids.length; c++) {
-        if(c == currentCentroid || linked[c]) continue;
-        if(BABYLON.Vector3.Distance(centroids[c], centroids[currentCentroid]) < avgDistance) {
-          positions = positions.concat(centroids[c].asArray());
-          if(normalPoints.length < 3) normalPoints.push(centroids[c])
-          linked[c] = true;
-          currentCentroid = c;
-          break;
-        }
-      }
-    }
-
-    // Calculate whether the triangulation should be flipped or not depending on the direction of the normal
-    var dpFacePlane = BABYLON.Plane.FromPoints(normalPoints[0], normalPoints[2], normalPoints[1]),
-        dpDot = BABYLON.Vector3.Dot(normalPoints[0].clone().normalize(), dpFacePlane.normal),
-        flipFace = dpDot > 0;
-
-    for(var i = relativeZeroIndex; i < (positions.length/3) - 2; i++) {
-       if(flipFace) indices.push(i+1, i+2, relativeZeroIndex);
-      else indices.push(relativeZeroIndex, i+2, i+1);
-    }
-  }
-
-  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-
-  var vertexData = new BABYLON.VertexData();
-  vertexData.positions = positions;
-  vertexData.indices = indices;
-  vertexData.normals = normals;
-  vertexData.colors = colors;
-
-  var polygon = new BABYLON.Mesh("planet", scene);
-  vertexData.applyToMesh(polygon);
-  polygon.convertToFlatShadedMesh();
-
-  return polygon;
+function slerp(p0, p1, t)
+{
+	var omega = Math.acos(p0.dot(p1));
+	return p0.clone().multiplyScalar(Math.sin((1 - t) * omega)).add(p1.clone().multiplyScalar(Math.sin(t * omega))).divideScalar(Math.sin(omega));
 }
 
-var createScene = function() {
-  if (BABYLON.Engine.isSupported()) {
-    var canvas = document.getElementById("renderCanvas");
-    var engine = new BABYLON.Engine(canvas, true);
-    var scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color3( 0.5, 0.5, 0.5);
+function getEdgeOppositeFaceIndex(edge, faceIndex)
+{
+	if (edge.f[0] === faceIndex) return edge.f[1];
+	if (edge.f[1] === faceIndex) return edge.f[0];
+	throw "Given face is not part of given edge.";
+}
 
-    // Camera
-    var camera = new BABYLON.ArcRotateCamera("camera1",  0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene);
-    camera.setPosition(new BABYLON.Vector3(-60, 0, 0));
-    camera.attachControl(canvas, true);
-
-    // Sun & Moon
-    var sun = new BABYLON.HemisphericLight("sun", new BABYLON.Vector3(0, 0, 1), scene);
-    sun.intensity = 0.6;
-    var moon = new BABYLON.HemisphericLight("moon", new BABYLON.Vector3(0, 0, -1), scene);
-    moon.intensity = 0.2;
-
-    var polygon = createPlanetCompoundIcosahedron(20, 10, scene); //This line renders the Icosahedron planet
-
-    camera.attachControl(canvas);
-
-    scene.registerBeforeRender(function () {
-      polygon.rotation.y += -0.0005;
-      polygon.rotation.x += -0.0005 / 4;
-    });
-
-    engine.runRenderLoop(function () {
-        scene.render();
-    });
-  }
-};
-
-createScene();
+function findNextFaceIndex(mesh, nodeIndex, faceIndex)
+{
+	var node = mesh.nodes[nodeIndex];
+	var face = mesh.faces[faceIndex];
+	var nodeFaceIndex = face.n.indexOf(nodeIndex);
+	var edge = mesh.edges[face.e[(nodeFaceIndex + 2) % 3]];
+	return getEdgeOppositeFaceIndex(edge, faceIndex);
+}
