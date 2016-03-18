@@ -16,7 +16,9 @@ window.planet = planet;
 
 function renderPlanet(scale, degree, scene)
 {
-  var material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
+  var material = new THREE.MeshPhongMaterial( { vertexColors: THREE.VertexColors,
+                                                specular: 0x000000
+                                              } );
   planet.geometry = new THREE.Geometry();
   sdIco = generateSubdividedIcosahedron(scale, degree);
 

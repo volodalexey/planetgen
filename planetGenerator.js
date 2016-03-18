@@ -20,20 +20,19 @@ function init() {
 
 
   // lights
+  var sun = new THREE.DirectionalLight( 0xffffff );
+  sun.position.set( -1, 0, 0 );
+  scene.add( sun );
 
-  light = new THREE.DirectionalLight( 0xffffff );
-  light.position.set( 1, 1, 1 );
-  scene.add( light );
-
-  light = new THREE.DirectionalLight( 0x002288 );
-  light.position.set( -1, -1, -1 );
-  scene.add( light );
-
-  light = new THREE.AmbientLight( 0x222222 );
-  scene.add( light );
+  var universalLight = new THREE.AmbientLight( 0xffffff );
+  universalLight.intensity = 0.3;
+  scene.add( universalLight );
 
   //Create the planet mesh
-  renderPlanet(300, 20, scene);
+  var start = new Date();
+  renderPlanet(300, 80, scene);
+
+  console.log("Computation done in: " + (new Date() - start) + " ms");
 
   // renderer
   renderer = new THREE.WebGLRenderer( { antialias: false } );

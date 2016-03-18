@@ -1,7 +1,15 @@
+var planet = {
+  faceToTile: []
+};
+
+var sdIco;
+var selectedBorder = null;
 
 function createPlanetMesh(scale, degree, scene) {
     var material = new BABYLON.StandardMaterial("mat", scene);
-    var sdIco = generateSubdividedIcosahedron(scale, degree);
+    material.specularColor = new BABYLON.Color3(0, 0, 0); // No specular color
+
+    sdIco = generateSubdividedIcosahedron(scale, degree);
 
     var indices = [];
     var colors = [];
@@ -38,6 +46,7 @@ function createPlanetMesh(scale, degree, scene) {
         }
 
         for (var i = relativeZeroIndex; i < (positions.length / 3) - 2; i++) {
+            planet.faceToTile[indices.length / 3] = n
             indices.push(relativeZeroIndex);
             indices.push(i + 1);
             indices.push(i + 2);
@@ -377,12 +386,12 @@ var createScene = function () {
 
         // Sun & Moon
         var sun = new BABYLON.HemisphericLight("sun", new BABYLON.Vector3(0, 0, 1), scene);
-        sun.intensity = 0.6;
+        sun.intensity = 1.0;
         var moon = new BABYLON.HemisphericLight("moon", new BABYLON.Vector3(0, 0, -1), scene);
         moon.intensity = 0.2;
 
         var start = new Date();
-        var polygon = createPlanetMesh(20, 40, scene); //This line renders the Icosahedron planet
+        var polygon = createPlanetMesh(20, 80, scene); //This line renders the Icosahedron planet
 
         console.log("Computation done in: " + (new Date() - start) + " ms");
 
@@ -391,10 +400,33 @@ var createScene = function () {
         scene.registerBeforeRender(function () {
             polygon.rotation.y += -0.0005;
             polygon.rotation.x += -0.0005 / 4;
+
+            if(selectedBorder != null) selectedBorder.rotation = polygon.rotation;
         });
 
         engine.runRenderLoop(function () {
             scene.render();
+        });
+
+        window.addEventListener("click", function () {
+           if(selectedBorder != null) selectedBorder.dispose();
+           // We try to pick an object
+           var faceId = scene.pick(scene.pointerX, scene.pointerY).faceId,
+               tileId = planet.faceToTile[faceId];
+           var numFaces = sdIco.nodes[tileId].f.length;
+           var color = new BABYLON.Color3(242/255,182/255,64/255);
+
+           var linePositions = []
+
+           // Get all the centroids of the faces adjacent to this vertex
+           for (var f = 0; f < numFaces; f++) {
+               var centroid = sdIco.faces[sdIco.nodes[tileId].f[f]].centroid;
+               linePositions.push(centroid);
+           }
+
+           linePositions.push(sdIco.faces[sdIco.nodes[tileId].f[0]].centroid);
+
+           selectedBorder = BABYLON.Mesh.CreateLines("lines", linePositions, scene);
         });
     }
 };
