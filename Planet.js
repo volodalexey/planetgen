@@ -4,6 +4,7 @@ var sdIco,
       mesh: null,
       selectedBorder: null,
       border: {
+        mesh: null,
         geometry: new THREE.Geometry(),
         material: new THREE.LineBasicMaterial({
                   	color: 0x000000,
@@ -74,8 +75,8 @@ function renderPlanet(scale, degree, scene)
   planet.mesh.geometry.dynamic = true;
   scene.add( planet.mesh );
 
-  var borders = new THREE.LineSegments(planet.border.geometry, planet.border.material);
-  scene.add( borders );
+  planet.border.mesh = new THREE.LineSegments(planet.border.geometry, planet.border.material);
+  scene.add( planet.border.mesh );
 }
 
 function pickTile(tileId, scene) {

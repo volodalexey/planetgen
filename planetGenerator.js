@@ -30,12 +30,12 @@ function init() {
 
   //Create the planet mesh
   var start = new Date();
-  renderPlanet(300, 80, scene);
+  renderPlanet(300, 60, scene);
 
   console.log("Computation done in: " + (new Date() - start) + " ms");
 
   // renderer
-  renderer = new THREE.WebGLRenderer( { antialias: false } );
+  renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setClearColor( new THREE.Color(0.5, 0.5, 0.5), 1 );
   renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -74,9 +74,23 @@ function onMouseClick( event ) {
   render();
 }
 
+function update() {
+  planet.mesh.rotation.y+=0.00025;
+  planet.mesh.rotation.x+=0.000025;
+
+  planet.border.mesh.rotation.y+=0.00025;
+  planet.border.mesh.rotation.x+=0.000025;
+
+  // if(planet.selectedBorder != null) {
+  //   planet.selectedBorder.rotation = (planet.mesh.rotation);
+  // }
+  render();
+}
+
 function animate() {
   requestAnimationFrame( animate );
   controls.update();
+  update();
 }
 
 function render() {

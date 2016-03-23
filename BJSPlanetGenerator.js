@@ -149,18 +149,18 @@ function generateIcosahedron() {
       { n: [6, 9, 8], e: [25, 28, 24], },
       { n: [7, 10, 11], e: [26, 29, 27], },
     ];
-
-    for (var i = 0; i < edges.length; ++i)
-        for (var j = 0; j < edges[i].n.length; ++j)
-            nodes[j].e.push(i);
-
-    for (var i = 0; i < faces.length; ++i)
-        for (var j = 0; j < faces[i].n.length; ++j)
-            nodes[j].f.push(i);
-
-    for (var i = 0; i < faces.length; ++i)
-        for (var j = 0; j < faces[i].e.length; ++j)
-            edges[j].f.push(i);
+    // 
+    // for (var i = 0; i < edges.length; ++i)
+    //     for (var j = 0; j < edges[i].n.length; ++j)
+    //         nodes[j].e.push(i);
+    //
+    // for (var i = 0; i < faces.length; ++i)
+    //     for (var j = 0; j < faces[i].n.length; ++j)
+    //         nodes[j].f.push(i);
+    //
+    // for (var i = 0; i < faces.length; ++i)
+    //     for (var j = 0; j < faces[i].e.length; ++j)
+    //         edges[j].f.push(i);
 
     return { nodes: nodes, edges: edges, faces: faces };
 }
@@ -391,7 +391,7 @@ var createScene = function () {
         moon.intensity = 0.2;
 
         var start = new Date();
-        var polygon = createPlanetMesh(20, 80, scene); //This line renders the Icosahedron planet
+        var polygon = createPlanetMesh(20, 60, scene); //This line renders the Icosahedron planet
 
         console.log("Computation done in: " + (new Date() - start) + " ms");
 
