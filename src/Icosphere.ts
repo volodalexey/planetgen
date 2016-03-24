@@ -1,6 +1,6 @@
 /// <reference path="lib/babylon.d.ts" />
 
-module POLITIK {
+module EDEN {
   interface IcoNode {
     p: BABYLON.Vector3;
     e: Array<number>;

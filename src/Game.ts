@@ -1,6 +1,6 @@
 /// <reference path="Planet.ts" />
 
-module POLITIK {
+module EDEN {
   export class Game {
     canvas: HTMLCanvasElement;
     scene: BABYLON.Scene;
@@ -25,8 +25,7 @@ module POLITIK {
       this.planet = new Planet(20, 60, this.scene); //This line renders the Icosahedron planet
       this.planet.render();
 
-      // camera.attachControl(canvas);
-
+      this.registerResize();
       this.registerBeforeRender();
       this.runRenderLoop();
 
@@ -55,11 +54,15 @@ module POLITIK {
       moon.intensity = 0.2;
     }
 
+    registerResize() {
+      window.addEventListener("resize", () => {
+        this.engine.resize();
+      });
+    }
+
     registerBeforeRender() {
       this.scene.registerBeforeRender(() => {
           this.planet.revolve();
-
-          // if(selectedBorder != null) selectedBorder.rotation = polygon.rotation;
       });
     }
 

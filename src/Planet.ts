@@ -1,6 +1,6 @@
 /// <reference path="Icosphere.ts" />
 
-module POLITIK {
+module EDEN {
   interface PlanetData {
     faceToTile: Array<number>;
     mesh: BABYLON.Mesh;
@@ -41,16 +41,8 @@ module POLITIK {
       if(this.selectedBorder != null) this.selectedBorder.dispose();
 
       var tileId: number = this.planet.faceToTile[faceId];
-      // var numFaces: number = this.icosphere.icosahedron.nodes[tileId].f.length;
       var color: BABYLON.Color3 = new BABYLON.Color3(242/255,182/255,64/255);
-
       var linePositions: Array<BABYLON.Vector3> = []
-
-      // Get all the centroids of the faces adjacent to this vertex
-      // for (var f = 0; f < numFaces; f++) {
-      //     var centroid = sdIco.faces[sdIco.nodes[tileId].f[f]].centroid;
-      //     linePositions.push(centroid);
-      // }
 
       for(var f of this.icosphere.icosahedron.nodes[tileId].f) {
         var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[f].centroid;
