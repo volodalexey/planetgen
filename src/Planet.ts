@@ -9,6 +9,7 @@ module EDEN {
 
   interface PlanetCorner {
     position: BABYLON.Vector3;
+    uv: BABYLON.Vector2;
   }
 
   interface PlanetData {
@@ -41,6 +42,17 @@ module EDEN {
       };
 
       this.icosphere = new Icosphere(scale, degree);
+    }
+
+    calculateUVCoord(p: BABYLON.Vector3) {
+      // Calculate the Miller Spherical Projection and map it to UV coordinates
+      var lat: number = Math.asin(p.y / this.scale);
+      var lon: number = Math.atan2(p.z, p.x);
+
+      var x: number = lon / Math.PI;
+      var y: number = (5/4)*Math.log(Math.tan((Math.PI / 4) + (2*lat/5))) / 2.2523234430803587;
+      if(y < -1.0) y = 1.0
+      return new BABYLON.Vector2(x, y);
     }
 
     revolve() {
@@ -93,7 +105,8 @@ module EDEN {
                 var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[n].f[f]].centroid;
 
                 var corner: PlanetCorner = {
-                  position: centroid
+                  position: centroid,
+                  uv: this.calculateUVCoord(centroid)
                 }
 
                 tile.center.addInPlace(centroid.scale(1.0/numFaces));
@@ -107,7 +120,6 @@ module EDEN {
                 colors.push(color.b);
                 colors.push(1.0);
             }
-
             this.planet.tiles.push(tile);
 
             for (var i = relativeZeroIndex; i < (positions.length / 3) - 2; i++) {
