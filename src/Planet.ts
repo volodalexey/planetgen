@@ -1,9 +1,21 @@
 /// <reference path="Icosphere.ts" />
 
 module EDEN {
+  interface PlanetTile {
+    id: number,
+    center: BABYLON.Vector3;
+    corners: Array<PlanetCorner>;
+  }
+
+  interface PlanetCorner {
+    position: BABYLON.Vector3;
+  }
+
   interface PlanetData {
     faceToTile: Array<number>;
     mesh: BABYLON.Mesh;
+
+    tiles: Array<PlanetTile>;
   }
 
   export class Planet {
@@ -24,7 +36,8 @@ module EDEN {
 
       this.planet = {
         faceToTile: [],
-        mesh: new BABYLON.Mesh("planet", scene)
+        mesh: new BABYLON.Mesh("planet", scene),
+        tiles: []
       };
 
       this.icosphere = new Icosphere(scale, degree);
@@ -40,16 +53,17 @@ module EDEN {
     pickTile(faceId) {
       if(this.selectedBorder != null) this.selectedBorder.dispose();
 
-      var tileId: number = this.planet.faceToTile[faceId];
-      var color: BABYLON.Color3 = new BABYLON.Color3(242/255,182/255,64/255);
-      var linePositions: Array<BABYLON.Vector3> = []
 
-      for(var f of this.icosphere.icosahedron.nodes[tileId].f) {
-        var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[f].centroid;
-        linePositions.push(centroid);
+      var tileId: number = this.planet.faceToTile[faceId];
+      var tile: PlanetTile = this.planet.tiles[tileId];
+      var color: BABYLON.Color3 = new BABYLON.Color3(242/255,182/255,64/255);
+      var linePositions: Array<BABYLON.Vector3> = [];
+
+      for(var corner of tile.corners) {
+        linePositions.push(corner.position);
       }
 
-      linePositions.push(this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[tileId].f[0]].centroid);
+      linePositions.push(linePositions[0]);
 
       this.selectedBorder = BABYLON.Mesh.CreateLines("lines", linePositions, this.scene);
     }
@@ -68,9 +82,22 @@ module EDEN {
             var numFaces: number = this.icosphere.icosahedron.nodes[n].f.length;
             var color: BABYLON.Color3 = new BABYLON.Color3(0, Math.random() * 0.5, Math.random() * 1);
 
+            var tile: PlanetTile = {
+              id: n,
+              center: new BABYLON.Vector3(0,0,0),
+              corners: []
+            }
+
             // Get all the centroids of the faces adjacent to this vertex
             for (var f = 0; f < numFaces; f++) {
                 var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[n].f[f]].centroid;
+
+                var corner: PlanetCorner = {
+                  position: centroid
+                }
+
+                tile.center.addInPlace(centroid.scale(1.0/numFaces));
+                tile.corners.push(corner);
 
                 positions.push(centroid.x);
                 positions.push(centroid.y);
@@ -80,6 +107,8 @@ module EDEN {
                 colors.push(color.b);
                 colors.push(1.0);
             }
+
+            this.planet.tiles.push(tile);
 
             for (var i = relativeZeroIndex; i < (positions.length / 3) - 2; i++) {
                 this.planet.faceToTile[indices.length / 3] = n
