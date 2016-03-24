@@ -15,6 +15,7 @@ module EDEN {
   interface PlanetData {
     faceToTile: Array<number>;
     mesh: BABYLON.Mesh;
+    selectedBorder?: BABYLON.Mesh;
 
     tiles: Array<PlanetTile>;
   }
@@ -25,10 +26,9 @@ module EDEN {
     scene: BABYLON.Scene;
 
     icosphere: Icosphere;
-
     planet: PlanetData;
 
-    selectedBorder: BABYLON.Mesh;
+    renderDiffuseTexture: boolean = true;
 
     constructor(scale: number, degree: number, scene: BABYLON.Scene) {
       this.scale = scale;
@@ -52,18 +52,20 @@ module EDEN {
       var x: number = lon / Math.PI;
       var y: number = (5/4)*Math.log(Math.tan((Math.PI / 4) + (2*lat/5))) / 2.2523234430803587;
       if(y < -1.0) y = 1.0
+
+      x = (x + 1) / 2;
+      y = (y + 1) / 2;
       return new BABYLON.Vector2(x, y);
     }
 
     revolve() {
-      this.planet.mesh.rotation.y += -0.0005;
-      this.planet.mesh.rotation.x += -0.0005 / 4;
+      this.planet.mesh.rotation.y += -0.00005;
 
-      if(this.selectedBorder != null) this.selectedBorder.rotation = this.planet.mesh.rotation;
+      if(this.planet.selectedBorder != null) this.planet.selectedBorder.rotation = this.planet.mesh.rotation;
     }
 
     pickTile(faceId) {
-      if(this.selectedBorder != null) this.selectedBorder.dispose();
+      if(this.planet.selectedBorder != null) this.planet.selectedBorder.dispose();
 
 
       var tileId: number = this.planet.faceToTile[faceId];
@@ -77,16 +79,19 @@ module EDEN {
 
       linePositions.push(linePositions[0]);
 
-      this.selectedBorder = BABYLON.Mesh.CreateLines("lines", linePositions, this.scene);
+      this.planet.selectedBorder = BABYLON.Mesh.CreateLines("lines", linePositions, this.scene);
     }
 
     render() {
         var material: BABYLON.StandardMaterial = new BABYLON.StandardMaterial("mat", this.scene);
         material.specularColor = new BABYLON.Color3(0, 0, 0); // No specular color
 
+        if(this.renderDiffuseTexture) material.diffuseTexture = new BABYLON.Texture("assets/earth.jpg", this.scene);
+
         var indices: Array<number> = [];
         var colors: Array<number> = [];
         var positions: Array<number> = [];
+        var uvs: Array<number> = [];
 
         // Generate dual polyhedron position and face indices
         for (var n = 0; n < this.icosphere.icosahedron.nodes.length; n++) {
@@ -103,7 +108,6 @@ module EDEN {
             // Get all the centroids of the faces adjacent to this vertex
             for (var f = 0; f < numFaces; f++) {
                 var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[n].f[f]].centroid;
-
                 var corner: PlanetCorner = {
                   position: centroid,
                   uv: this.calculateUVCoord(centroid)
@@ -119,6 +123,11 @@ module EDEN {
                 colors.push(color.g);
                 colors.push(color.b);
                 colors.push(1.0);
+
+                if(this.renderDiffuseTexture) {
+                  uvs.push(corner.uv.x);
+                  uvs.push(corner.uv.y);
+                }
             }
             this.planet.tiles.push(tile);
 
@@ -130,13 +139,13 @@ module EDEN {
             }
         }
 
-        this.planet.mesh.useVertexColors = true;
-
         var vertexData: BABYLON.VertexData = new BABYLON.VertexData();
 
         vertexData.indices = indices;
         vertexData.positions = positions;
         vertexData.colors = colors;
+
+        if(this.renderDiffuseTexture) vertexData.uvs = uvs;
 
         var normals: Array<number> = [];
         BABYLON.VertexData.ComputeNormals(positions, indices, normals);
