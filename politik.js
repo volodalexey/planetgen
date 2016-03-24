@@ -12,8 +12,7 @@ var POLITIK;
             this.degree = degree;
             this.generate();
             this.subdivide();
-            console.log(this.icosahedron);
-            // this.correctFaceIndices();
+            this.correctFaceIndices();
         }
         Icosphere.prototype.generate = function () {
             var phi = (1.0 + Math.sqrt(5.0)) / 2.0;
@@ -90,17 +89,6 @@ var POLITIK;
                     { n: [6, 9, 8], e: [25, 28, 24] },
                     { n: [7, 10, 11], e: [26, 29, 27] },
                 ];
-            // for (var i = 0; i < this.icosahedron.edges.length; ++i)
-            //   for (var j = 0; j < this.icosahedron.edges[i].n.length; ++j)
-            //     this.icosahedron.nodes[j].e.push(i);
-            //
-            // for (var i = 0; i < this.icosahedron.faces.length; ++i)
-            //   for (var j = 0; j < this.icosahedron.faces[i].n.length; ++j)
-            //     this.icosahedron.nodes[j].f.push(i);
-            //
-            // for (var i = 0; i < this.icosahedron.faces.length; ++i)
-            //   for (var j = 0; j < this.icosahedron.faces[i].e.length; ++j)
-            //     this.icosahedron.edges[j].f.push(i);
         };
         Icosphere.prototype.subdivide = function () {
             var _this = this;
@@ -315,4 +303,147 @@ var POLITIK;
         return Icosphere;
     }());
     POLITIK.Icosphere = Icosphere;
+})(POLITIK || (POLITIK = {}));
+/// <reference path="Icosphere.ts" />
+var POLITIK;
+(function (POLITIK) {
+    var Planet = (function () {
+        function Planet(scale, degree, scene) {
+            this.scale = scale;
+            this.degree = degree;
+            this.scene = scene;
+            this.planet = {
+                faceToTile: [],
+                mesh: new BABYLON.Mesh("planet", scene)
+            };
+            this.icosphere = new POLITIK.Icosphere(scale, degree);
+        }
+        Planet.prototype.revolve = function () {
+            this.planet.mesh.rotation.y += -0.0005;
+            this.planet.mesh.rotation.x += -0.0005 / 4;
+            if (this.selectedBorder != null)
+                this.selectedBorder.rotation = this.planet.mesh.rotation;
+        };
+        Planet.prototype.pickTile = function (faceId) {
+            if (this.selectedBorder != null)
+                this.selectedBorder.dispose();
+            var tileId = this.planet.faceToTile[faceId];
+            // var numFaces: number = this.icosphere.icosahedron.nodes[tileId].f.length;
+            var color = new BABYLON.Color3(242 / 255, 182 / 255, 64 / 255);
+            var linePositions = [];
+            // Get all the centroids of the faces adjacent to this vertex
+            // for (var f = 0; f < numFaces; f++) {
+            //     var centroid = sdIco.faces[sdIco.nodes[tileId].f[f]].centroid;
+            //     linePositions.push(centroid);
+            // }
+            for (var _i = 0, _a = this.icosphere.icosahedron.nodes[tileId].f; _i < _a.length; _i++) {
+                var f = _a[_i];
+                var centroid = this.icosphere.icosahedron.faces[f].centroid;
+                linePositions.push(centroid);
+            }
+            linePositions.push(this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[tileId].f[0]].centroid);
+            this.selectedBorder = BABYLON.Mesh.CreateLines("lines", linePositions, this.scene);
+        };
+        Planet.prototype.render = function () {
+            var material = new BABYLON.StandardMaterial("mat", this.scene);
+            material.specularColor = new BABYLON.Color3(0, 0, 0); // No specular color
+            var indices = [];
+            var colors = [];
+            var positions = [];
+            // Generate dual polyhedron position and face indices
+            for (var n = 0; n < this.icosphere.icosahedron.nodes.length; n++) {
+                var relativeZeroIndex = positions.length / 3;
+                var numFaces = this.icosphere.icosahedron.nodes[n].f.length;
+                var color = new BABYLON.Color3(0, Math.random() * 0.5, Math.random() * 1);
+                // Get all the centroids of the faces adjacent to this vertex
+                for (var f = 0; f < numFaces; f++) {
+                    var centroid = this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[n].f[f]].centroid;
+                    positions.push(centroid.x);
+                    positions.push(centroid.y);
+                    positions.push(centroid.z);
+                    colors.push(color.r);
+                    colors.push(color.g);
+                    colors.push(color.b);
+                    colors.push(1.0);
+                }
+                for (var i = relativeZeroIndex; i < (positions.length / 3) - 2; i++) {
+                    this.planet.faceToTile[indices.length / 3] = n;
+                    indices.push(relativeZeroIndex);
+                    indices.push(i + 1);
+                    indices.push(i + 2);
+                }
+            }
+            this.planet.mesh.useVertexColors = true;
+            var vertexData = new BABYLON.VertexData();
+            vertexData.indices = indices;
+            vertexData.positions = positions;
+            vertexData.colors = colors;
+            var normals = [];
+            BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+            vertexData.normals = normals;
+            vertexData.applyToMesh(this.planet.mesh, false);
+            this.planet.mesh.material = material;
+        };
+        return Planet;
+    }());
+    POLITIK.Planet = Planet;
+})(POLITIK || (POLITIK = {}));
+/// <reference path="Planet.ts" />
+var POLITIK;
+(function (POLITIK) {
+    var Game = (function () {
+        function Game() {
+            if (!BABYLON.Engine.isSupported()) {
+                throw "Browser does not support WebGL!";
+            }
+            BABYLON.Engine.ShadersRepository = "/src/Shaders/";
+            this.canvas = document.getElementById("renderCanvas");
+            this.engine = new BABYLON.Engine(this.canvas, true);
+            this.scene = new BABYLON.Scene(this.engine);
+            this.scene.clearColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+            this.createCamera();
+            this.createSunAndMoon();
+            this.planet = new POLITIK.Planet(20, 60, this.scene); //This line renders the Icosahedron planet
+            this.planet.render();
+            // camera.attachControl(canvas);
+            this.registerBeforeRender();
+            this.runRenderLoop();
+            this.registerClick();
+        }
+        Game.prototype.registerClick = function () {
+            var _this = this;
+            window.addEventListener("click", function () {
+                var faceId = _this.scene.pick(_this.scene.pointerX, _this.scene.pointerY).faceId;
+                _this.planet.pickTile(faceId);
+            });
+        };
+        Game.prototype.createCamera = function () {
+            // Camera
+            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), this.scene);
+            camera.setPosition(new BABYLON.Vector3(-60, 0, 0));
+            camera.attachControl(this.canvas, true);
+        };
+        Game.prototype.createSunAndMoon = function () {
+            // Sun & Moon
+            var sun = new BABYLON.HemisphericLight("sun", new BABYLON.Vector3(0, 0, 1), this.scene);
+            sun.intensity = 1.0;
+            var moon = new BABYLON.HemisphericLight("moon", new BABYLON.Vector3(0, 0, -1), this.scene);
+            moon.intensity = 0.2;
+        };
+        Game.prototype.registerBeforeRender = function () {
+            var _this = this;
+            this.scene.registerBeforeRender(function () {
+                _this.planet.revolve();
+                // if(selectedBorder != null) selectedBorder.rotation = polygon.rotation;
+            });
+        };
+        Game.prototype.runRenderLoop = function () {
+            var _this = this;
+            this.engine.runRenderLoop(function () {
+                _this.scene.render();
+            });
+        };
+        return Game;
+    }());
+    POLITIK.Game = Game;
 })(POLITIK || (POLITIK = {}));
