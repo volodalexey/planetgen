@@ -137,6 +137,24 @@ module EDEN {
                 indices.push(i + 1);
                 indices.push(i + 2);
             }
+
+            //Fix Zipper
+            for(var i = relativeZeroIndex; i < (uvs.length / 2) - 2; i++) {
+              var i1: number = relativeZeroIndex*2;
+              var i2: number = (i+1) * 2;
+              var i3: number = (i+2) * 2;
+
+              var A: BABYLON.Vector3 = new BABYLON.Vector3(uvs[i1], uvs[i1 + 1], 0);
+              var BA: BABYLON.Vector3 = new BABYLON.Vector3(uvs[i2], uvs[i2 + 1], 0).subtract(A);
+              var CA: BABYLON.Vector3 = new BABYLON.Vector3(uvs[i3], uvs[i3 + 1], 0).subtract(A);
+
+              var cross: BABYLON.Vector3 = BABYLON.Vector3.Cross(BA, CA);
+              if(cross.z < 0) {
+                if(uvs[i1] < 0.25) uvs[i1] += 1;
+                if(uvs[i2] < 0.25) uvs[i2] += 1;
+                if(uvs[i3] < 0.25) uvs[i3] += 1;
+              }
+            }
         }
 
         var vertexData: BABYLON.VertexData = new BABYLON.VertexData();
