@@ -99,8 +99,8 @@ module EDEN {
     }
 
     debugRender() {
-      var element: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmCanvas');
-      var canvas: any = element.getContext('2d');
+      var canv_element: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmCanvas');
+      var canvas: any = canv_element.getContext('2d');
       canvas.fillStyle = '#eeeeee';
       canvas.fillRect(0, 0, this.width, this.height);
 
@@ -124,6 +124,14 @@ module EDEN {
       }
 
       canvas.putImageData(p,0,0);
+
+      // Resize the output canvas to 256 pixels so that we do not take up too much screen real estate.
+      var tmpImage = new Image();
+      tmpImage.src = canv_element.toDataURL("image/png");
+      canvas.clearRect(0, 0, this.width, this.height);
+      canv_element.width = canv_element.width / 2;
+      canv_element.height = canv_element.height / 2;
+      canvas.drawImage(tmpImage, 0, 0, 256, 256);
     }
   }
 }
