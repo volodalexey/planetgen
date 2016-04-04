@@ -1,4 +1,5 @@
 /// <reference path="Icosphere.ts" />
+/// <reference path="Terrain.ts" />
 
 module EDEN {
   interface PlanetTile {
@@ -28,9 +29,15 @@ module EDEN {
     icosphere: Icosphere;
     planet: PlanetData;
 
-    renderDiffuseTexture: boolean = true;
+    terrain: Terrain;
 
-    constructor(scale: number, degree: number, scene: BABYLON.Scene) {
+    // Render Earth.jpg from the Asset subfolder
+    renderDiffuseTexture: boolean = false;
+
+    // Render the procedurally created heightmap texture to debug canvas
+    renderDebugDiffuseTerrain: boolean = true;
+
+    constructor(scale: number, degree: number, scene: BABYLON.Scene, seed: string) {
       this.scale = scale;
       this.degree = degree;
       this.scene = scene;
@@ -41,7 +48,12 @@ module EDEN {
         tiles: []
       };
 
+      this.terrain = new EDEN.Terrain(seed)
+
       this.icosphere = new Icosphere(scale, degree);
+
+      // Debug rendering
+      this.terrain.toggleDebugVisibility(this.renderDebugDiffuseTerrain);
     }
 
     calculateUVCoord(p: BABYLON.Vector3) {
@@ -97,8 +109,6 @@ module EDEN {
         for (var n = 0; n < this.icosphere.icosahedron.nodes.length; n++) {
             var relativeZeroIndex: number = positions.length / 3;
             var numFaces: number = this.icosphere.icosahedron.nodes[n].f.length;
-            var color: BABYLON.Color3 = new BABYLON.Color3(0, Math.random() * 0.5, Math.random() * 1);
-
             var tile: PlanetTile = {
               id: n,
               center: new BABYLON.Vector3(0,0,0),
@@ -113,16 +123,13 @@ module EDEN {
                   uv: this.calculateUVCoord(centroid)
                 }
 
+
                 tile.center.addInPlace(centroid.scale(1.0/numFaces));
                 tile.corners.push(corner);
 
                 positions.push(centroid.x);
                 positions.push(centroid.y);
                 positions.push(centroid.z);
-                colors.push(color.r);
-                colors.push(color.g);
-                colors.push(color.b);
-                colors.push(1.0);
 
                 if(this.renderDiffuseTexture) {
                   uvs.push(corner.uv.x);
@@ -131,6 +138,16 @@ module EDEN {
             }
             this.planet.tiles.push(tile);
 
+            var center_uv: BABYLON.Vector2 = this.calculateUVCoord(tile.center);
+            var color = this.terrain.getColor(center_uv.x, center_uv.y);
+
+            for(var f = 0; f < numFaces; f++) {
+              colors.push(color.r);
+              colors.push(color.g);
+              colors.push(color.b);
+              colors.push(1.0);
+            }
+
             for (var i = relativeZeroIndex; i < (positions.length / 3) - 2; i++) {
                 this.planet.faceToTile[indices.length / 3] = n
                 indices.push(relativeZeroIndex);
@@ -138,7 +155,7 @@ module EDEN {
                 indices.push(i + 2);
             }
 
-            //Fix Zipper
+            //Fix Zipper for Legitimate Diffuse Texture
             for(var i = relativeZeroIndex; i < (uvs.length / 2) - 2; i++) {
               var i1: number = relativeZeroIndex*2;
               var i2: number = (i+1) * 2;

@@ -22,7 +22,8 @@ module EDEN {
       this.createCamera();
       this.createSunAndMoon();
 
-      this.planet = new Planet(20, 60, this.scene); //This line renders the Icosahedron planet
+      // This line renders the Hex Planet with a give seed
+      this.planet = new Planet(20, 60, this.scene, '92412');
       this.planet.render();
 
       this.registerResize();
