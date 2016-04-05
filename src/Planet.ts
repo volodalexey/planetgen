@@ -131,7 +131,7 @@ module EDEN {
 
                 var corner: PlanetCorner = {
                   position: centroid,
-                  uv: this.calculateUVCoord(centroid)
+                  uv: uv
                 }
 
                 tile.corners.push(corner);
