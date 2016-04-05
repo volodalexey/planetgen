@@ -27,11 +27,20 @@
           top: 0px;
           left: 0px;
         }
+
+        #hmGreyCanvas {
+          z-index: 3;
+          background-color: white;
+          position: absolute;
+          top: 256px;
+          left: 0px;
+        }
     </style>
 </head>
 <body>
     <canvas id="renderCanvas"></canvas>
     <canvas id="hmCanvas" height="512" width="512"></canvas>
+    <canvas id="hmGreyCanvas" height="512" width="512"></canvas>
 </body>
 
 <script>

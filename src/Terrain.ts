@@ -1,7 +1,8 @@
 /// <reference path="lib/babylon.d.ts" />
 
-/// <reference path="rand/Noise.ts" />
-/// <reference path="rand/Alea.ts" />
+/// <reference path="util/Noise.ts" />
+/// <reference path="util/Alea.ts" />
+/// <reference path="util/Gradient.ts" />
 
 module EDEN {
   export class Terrain {
@@ -13,6 +14,10 @@ module EDEN {
 
     data: number[];
     noiseGen: Noise;
+
+    terrainGradient: Gradient;
+
+    resolution: number = 256;
 
     constructor(seed: string) {
       this.seed = seed;
@@ -26,14 +31,42 @@ module EDEN {
       this.noiseGen = new Noise({
         amplitude: 0.1,
         frequency: 0.004,
-        max: 255,
+        max: this.resolution - 1,
         min: 0,
         octaves: 10,
         persistence: 0.5,
         random: this.prng.random
       });
 
+      this.setupTerrainGradient();
       this.generateTerrain();
+    }
+
+    setupTerrainGradient() {
+      this.terrainGradient = new Gradient(this.resolution);
+
+      // Deep Ocean
+      this.terrainGradient.addColorStop(0.0, new BABYLON.Color3(0, 0, 153/255));
+
+      // Sea
+      this.terrainGradient.addColorStop(0.4, new BABYLON.Color3(0/255, 102/255, 255/255));
+
+      // Coastal Water
+      this.terrainGradient.addColorStop(0.49, new BABYLON.Color3(153/255, 204/255, 255/255));
+
+      // Coastal Land
+      this.terrainGradient.addColorStop(0.5, new BABYLON.Color3(255/255, 255/255, 204/255));
+
+      // Grasslands
+      this.terrainGradient.addColorStop(0.51, new BABYLON.Color3(51/255, 204/255, 51/255));
+
+      // Mountain
+      this.terrainGradient.addColorStop(0.7, new BABYLON.Color3(153/255, 102/255, 51/255));
+
+      // Mountain Peaks
+      this.terrainGradient.addColorStop(1.0, new BABYLON.Color3(230/255, 255/255, 255/255));
+
+      this.terrainGradient.calculate();
     }
 
     // Color depending upon the tile, currently simple land or water coloring.
@@ -46,19 +79,8 @@ module EDEN {
       var b: number = 0;
 
       var idx: number = y*this.width + x;
-
-      if(this.data[idx] <= 128) {
-        r=51;
-        g=204;
-        b=51;
-      }
-      else {
-        r=51;
-        g=153;
-        b=255;
-      }
-
-      return new BABYLON.Color3(r/255, g/255, b/255);
+      var color: BABYLON.Color3 = this.terrainGradient.getColorForHeight(Math.floor(this.data[idx]));
+      return color;
     }
 
     // Utilize 4D space in conjunction with 2 2D circles orthogonal to each other
@@ -88,13 +110,16 @@ module EDEN {
     }
 
     toggleDebugVisibility(debug: boolean) {
-      var element: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmCanvas');
+      var diffuseCanvas: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmCanvas');
+      var greyCanvas: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmGreyCanvas');
       if(debug) {
-        element.style.visibility = 'visible';
+        diffuseCanvas.style.visibility = 'visible';
+        greyCanvas.style.visibility = 'visible';
         this.debugRender();
       }
       else {
-        element.style.visibility = 'hidden';
+        diffuseCanvas.style.visibility = 'hidden';
+        greyCanvas.style.visibility = 'hidden';
       }
     }
 
@@ -104,7 +129,14 @@ module EDEN {
       canvas.fillStyle = '#eeeeee';
       canvas.fillRect(0, 0, this.width, this.height);
 
-      var p: any = canvas.createImageData(this.width, this.height);
+      var diffuseData: any = canvas.createImageData(this.width, this.height);
+
+      var grey_canv_element: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('hmGreyCanvas');
+      var gCanvas: any = grey_canv_element.getContext('2d');
+      gCanvas.fillStyle = '#eeeeee';
+      gCanvas.fillRect(0, 0, this.width, this.height);
+
+      var greyData: any = gCanvas.createImageData(this.width, this.height);
 
       for(var i = 0; i < this.data.length; i++) {
 
@@ -117,13 +149,22 @@ module EDEN {
 
         var idx = i*4;
 
-        p.data[idx++] = color.r * 255;
-        p.data[idx++] = color.g * 255;
-        p.data[idx++] = color.b * 255;
-        p.data[idx] = 255;
+        diffuseData.data[idx++] = color.r * 255;
+        diffuseData.data[idx++] = color.g * 255;
+        diffuseData.data[idx++] = color.b * 255;
+        diffuseData.data[idx] = 255;
+
+        idx = i*4;
+
+        greyData.data[idx++] = this.data[i];
+        greyData.data[idx++] = this.data[i];
+        greyData.data[idx++] = this.data[i];
+        greyData.data[idx] = 255;
+
       }
 
-      canvas.putImageData(p,0,0);
+      canvas.putImageData(diffuseData,0,0);
+      gCanvas.putImageData(greyData,0,0);
 
       // Resize the output canvas to 256 pixels so that we do not take up too much screen real estate.
       var tmpImage = new Image();
@@ -132,6 +173,13 @@ module EDEN {
       canv_element.width = canv_element.width / 2;
       canv_element.height = canv_element.height / 2;
       canvas.drawImage(tmpImage, 0, 0, 256, 256);
+
+      tmpImage = new Image();
+      tmpImage.src = grey_canv_element.toDataURL("image/png");
+      gCanvas.clearRect(0, 0, this.width, this.height);
+      grey_canv_element.width = grey_canv_element.width / 2;
+      grey_canv_element.height = grey_canv_element.height / 2;
+      gCanvas.drawImage(tmpImage, 0, 0, 256, 256);
     }
   }
 }
