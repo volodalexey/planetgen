@@ -23,7 +23,7 @@ module EDEN {
       this.createSunAndMoon();
 
       // This line renders the Hex Planet with a give seed
-      this.planet = new Planet(20, 60, this.scene, '912');
+      this.planet = new Planet(20, 60, this.scene, 'sdasy');
       this.planet.render();
 
       this.registerResize();
