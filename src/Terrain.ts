@@ -51,6 +51,9 @@ module EDEN {
       // Sea
       this.terrainGradient.addColorStop(0.4, new BABYLON.Color3(0/255, 102/255, 255/255));
 
+      // Coast
+      this.terrainGradient.addColorStop(0.46, new BABYLON.Color3(0/255, 120/255, 255/255));
+
       // Coastal Water
       this.terrainGradient.addColorStop(0.49, new BABYLON.Color3(153/255, 204/255, 255/255));
 
@@ -61,7 +64,10 @@ module EDEN {
       this.terrainGradient.addColorStop(0.51, new BABYLON.Color3(51/255, 204/255, 51/255));
 
       // Mountain
-      this.terrainGradient.addColorStop(0.7, new BABYLON.Color3(153/255, 102/255, 51/255));
+      this.terrainGradient.addColorStop(0.65, new BABYLON.Color3(153/255, 102/255, 51/255));
+
+      // Mountain Peaks
+      this.terrainGradient.addColorStop(0.72, new BABYLON.Color3(230/255, 255/255, 255/255));
 
       // Mountain Peaks
       this.terrainGradient.addColorStop(1.0, new BABYLON.Color3(230/255, 255/255, 255/255));
