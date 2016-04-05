@@ -75,7 +75,7 @@ module EDEN {
       this.terrainGradient.calculate();
     }
 
-    // Color depending upon the tile, currently simple land or water coloring.
+    // Get color depending upon the tile from the calculated Terrain Gradient
     getColor(u: number, v: number) {
       var x: number = Math.floor(u*this.width);
       var y:number = Math.floor((1-v)*this.height);
@@ -87,6 +87,15 @@ module EDEN {
       var idx: number = y*this.width + x;
       var color: BABYLON.Color3 = this.terrainGradient.getColorForHeight(Math.floor(this.data[idx]));
       return color;
+    }
+
+    // Get height depending upon the tile, from the generated heightmap
+    getHeight(u: number, v: number) {
+      var x: number = Math.floor(u*this.width);
+      var y:number = Math.floor((1-v)*this.height);
+
+      var idx: number = y*this.width + x;
+      return Math.floor(this.data[idx]) / (this.resolution - 1);
     }
 
     // Utilize 4D space in conjunction with 2 2D circles orthogonal to each other

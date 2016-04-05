@@ -34,8 +34,11 @@ module EDEN {
     // Render Earth.jpg from the Asset subfolder
     renderDiffuseTexture: boolean = false;
 
-    // Render the procedurally created heightmap texture to debug canvas
-    renderDebugDiffuseTerrain: boolean = true;
+    // Render the procedurally created heightmap texture(s) to debug canvas
+    renderDebugTextureCanvas: boolean = true;
+
+    // Deform mesh based on heightmap values
+    renderDeformedMesh: boolean = true;
 
     constructor(scale: number, degree: number, scene: BABYLON.Scene, seed: string) {
       this.scale = scale;
@@ -53,7 +56,7 @@ module EDEN {
       this.icosphere = new Icosphere(scale, degree);
 
       // Debug rendering
-      this.terrain.toggleDebugVisibility(this.renderDebugDiffuseTerrain);
+      this.terrain.toggleDebugVisibility(this.renderDebugTextureCanvas);
     }
 
     calculateUVCoord(p: BABYLON.Vector3) {
@@ -118,13 +121,19 @@ module EDEN {
             // Get all the centroids of the faces adjacent to this vertex
             for (var f = 0; f < numFaces; f++) {
                 var centroid: BABYLON.Vector3 = this.icosphere.icosahedron.faces[this.icosphere.icosahedron.nodes[n].f[f]].centroid;
+                var uv: BABYLON.Vector2 = this.calculateUVCoord(centroid);
+
+                var height = (this.terrain.getHeight(uv.x, uv.y) * 2) - 1;
+                var normal = centroid.clone().normalize();
+
+                tile.center.addInPlace(centroid.scale(1.0/numFaces));
+                if(this.renderDeformedMesh) centroid = centroid.add(normal.scaleInPlace(height * 2));
+
                 var corner: PlanetCorner = {
                   position: centroid,
                   uv: this.calculateUVCoord(centroid)
                 }
 
-
-                tile.center.addInPlace(centroid.scale(1.0/numFaces));
                 tile.corners.push(corner);
 
                 positions.push(centroid.x);
