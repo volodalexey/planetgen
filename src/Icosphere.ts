@@ -1,4 +1,4 @@
-/// <reference path="lib/babylon.d.ts" />
+/// <reference path="typings/babylon.d.ts" />
 
 module EDEN {
   interface IcoNode {
