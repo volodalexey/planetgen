@@ -70,7 +70,7 @@ module EDEN {
 
       x = (x + 1) / 2;
       y = (y + 1) / 2;
-      return new BABYLON.Vector2(x, y);
+      return new BABYLON.Vector2(x, 1-y);
     }
 
     revolve() {
@@ -142,7 +142,7 @@ module EDEN {
 
                 if(this.renderDiffuseTexture) {
                   uvs.push(corner.uv.x);
-                  uvs.push(corner.uv.y);
+                  uvs.push(1-corner.uv.y);
                 }
             }
             this.planet.tiles.push(tile);

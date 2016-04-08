@@ -1,58 +1,52 @@
 /// <reference path="../typings/babylon.d.ts" />
 
 module EDEN {
-  interface ColorStop {
+  interface Stop {
       stop: number;
-      color: BABYLON.Color3;
+      value: number;
   }
 
   export class Gradient {
-    colorStops: Array<ColorStop>;
+    stops: Array<Stop>;
     resolution: number;
 
-    gradient: Array<BABYLON.Color3>;
+    gradient: Array<number>;
 
     constructor(resolution: number) {
-      this.colorStops = [];
+      this.stops = [];
       this.resolution = resolution;
 
       this.gradient = [];
     }
 
-    addColorStop(stop: number, color: BABYLON.Color3) {
-      this.colorStops.push({
+    addStop(stop: number, value: number) {
+      this.stops.push({
         stop: stop,
-        color: color
+        value: value
       });
     }
 
-    getColorForHeight(height: number) {
-      return this.gradient[height];
+    getValue(index: number) {
+      return this.gradient[Math.floor(index * this.resolution)];
     }
 
     calculate() {
-      if(this.colorStops.length < 2) return;
+      if(this.stops.length < 2) return;
 
-      for(var stopIdx = 1; stopIdx < this.colorStops.length; stopIdx++) {
-        var currentStop = this.colorStops[stopIdx - 1];
-        var nextStop = this.colorStops[stopIdx];
+      for(var stopIdx = 1; stopIdx < this.stops.length; stopIdx++) {
+        var currentStop = this.stops[stopIdx - 1];
+        var nextStop = this.stops[stopIdx];
 
         var totalSteps = Math.ceil((nextStop.stop - currentStop.stop) * this.resolution);
-
-        var rStep = (nextStop.color.r - currentStop.color.r) / (totalSteps - 1);
-        var gStep = (nextStop.color.g - currentStop.color.g) / (totalSteps - 1);
-        var bStep = (nextStop.color.b - currentStop.color.b) / (totalSteps - 1);
+        var step = (nextStop.value - currentStop.value) / (totalSteps - 1);
 
         for(var i = 0; i < totalSteps; i++) {
           var gradIdx = i + Math.ceil(currentStop.stop * this.resolution);
-
-          var gradR = currentStop.color.r + (rStep * i);
-          var gradG = currentStop.color.g + (gStep * i);
-          var gradB = currentStop.color.b + (bStep * i);
-
-          this.gradient[gradIdx] = new BABYLON.Color3(gradR, gradG, gradB);
+          var val = currentStop.value + (step * i);
+          this.gradient[gradIdx] = val;
         }
       }
     }
+
   }
 }

@@ -14,7 +14,7 @@ module EDEN {
     bottomRight: ColorStop;
   }
 
-  export class Gradient2D {
+  export class ColorGradient2D {
     colorStops: Array<ColorStop>;
     resolution: number;
 
@@ -112,8 +112,6 @@ module EDEN {
 
         }
       }
-
-      console.log(this.gradient);
     }
 
     isConcentricWithColorStop(neighbors: NearestNeighbors) {
