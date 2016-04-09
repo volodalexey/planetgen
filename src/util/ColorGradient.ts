@@ -26,8 +26,9 @@ module EDEN {
       });
     }
 
-    getColorForValue(value: number) {
-      return this.gradient[value];
+    getColor(value: number) {
+      var idx = Math.floor(value * (this.resolution - 1));
+      return this.gradient[idx];
     }
 
     calculate() {

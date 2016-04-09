@@ -4,9 +4,18 @@
 /// <reference path="../util/ColorGradient2D.ts" />
 
 module EDEN {
+  interface TerrainColorOptions {
+    PARCHMENT_FACTOR: number; // Controls how much rain is received inland, highest numbers means more desert
+
+  }
+
   export class TerrainColor {
     terrainGradient: ColorGradient;
     terrainGradient2D: ColorGradient2D;
+
+    options: TerrainColorOptions = {
+      PARCHMENT_FACTOR: 0.3
+    }
 
     maxHeight: number;
 
@@ -89,13 +98,36 @@ module EDEN {
       this.terrainGradient2D.calculate();
     }
 
-    getColor(height: number) {
-      var color: BABYLON.Color3 =  this.terrainGradient.getColorForValue(height);
-      return color;
+    getColor(heightNorm: number, rainNorm: number, tempNorm: number) {
+      var invHeight: number = (1 - (heightNorm*this.options.PARCHMENT_FACTOR));
+
+      var color2D: BABYLON.Color3 = this.terrainGradient2D.getColor(1-tempNorm, 1-(rainNorm * invHeight));
+      var color1D: BABYLON.Color3 = this.terrainGradient.getColor(heightNorm);
+
+      // Handle Ocean coloring
+      if(heightNorm < .5) {
+        return color1D;
+      }
+      // Coastal coloring to ensure smooth gradient from beach to mainland
+      else if(heightNorm >= 0.5 && heightNorm <= 0.505) {
+        return BABYLON.Color3.Lerp(color1D, color2D, 0.5);
+      }
+      // Interpolate mountain ranges into Whittaker coloring scheme
+      else if(heightNorm > 0.6) {
+        // If we are a snowy region, color a more rocky hue to the mountains
+        if(tempNorm < 0.2 && heightNorm < 0.70) {
+          var rockyColor: BABYLON.Color3 = new BABYLON.Color3(70/255, 90/255, 100/255);
+          color1D = BABYLON.Color3.Lerp(color1D, rockyColor, 1-tempNorm);
+        }
+        // 8.3 scaling factor comes from 0.72 as the beginning of mountain peaks, so 1.0 / (.72 - .6)
+        return BABYLON.Color3.Lerp(color2D, color1D, (heightNorm - 0.6) * 8.3);
+      }
+
+      return color2D;
     }
 
     get2DColor(u: number, v: number) {
-      return this.terrainGradient2D.getColorForUV(u,v);
+      return this.terrainGradient2D.getColor(u,v);
     }
   }
 }

@@ -25,11 +25,11 @@ module EDEN {
 
       this.noise = new Noise({
         amplitude: 0.1,
-        frequency: 0.01,
+        frequency: .003,
         max: maxRain,
         min: 0,
         octaves: 30,
-        persistence: 0.3,
+        persistence: 0.5,
         random: this.prng.random
       });
 

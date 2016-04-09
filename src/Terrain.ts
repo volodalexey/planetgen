@@ -18,7 +18,7 @@ module EDEN {
     // Terrain Temperature Properties
     maxTemp: number = 40;
     minTemp: number = -10;
-    tempDistortion: number = 15;
+    tempDistortion: number = 40;
 
     // Terrain Rainfall Properties
     maxRain: number = 400;
@@ -41,28 +41,11 @@ module EDEN {
 
     // Get color depending upon the tile from the TerrainColor object
     getColor(u: number, v: number) {
-      // var height: number = this.terrainHeightmap.getHeight(u, v);
-      // return this.terrainColor.getColor(height);
-
-      var height: number = this.terrainHeightmap.getHeight(u, v);
-      var heightNorm: number = height / this.maxHeight;
-      var invHeight: number = (1 - (heightNorm*0.3));
-      var rain: number = this.terrainRainmap.getRainfallNormalized(u, v) * invHeight;
+      var height: number = this.terrainHeightmap.getHeightNormalized(u, v);
+      var rain: number = this.terrainRainmap.getRainfallNormalized(u, v);
       var temp: number = this.terrainTemperature.getTemperatureNormalized(u, v);
 
-      var color: BABYLON.Color3 = this.terrainColor.get2DColor(1-temp, 1-rain);;
-      if(heightNorm <= 0.505 || heightNorm > 0.60) {
-        var coastalColor: BABYLON.Color3 = this.terrainColor.getColor(height);
-        if(heightNorm >= 0.5 && heightNorm < 0.60) {
-          color = BABYLON.Color3.Lerp(coastalColor, color, 0.5);
-        }
-        else if(heightNorm > 0.60) {
-          color = BABYLON.Color3.Lerp(color, coastalColor, (heightNorm - 0.6) * 8.3 );
-        }
-        else color = coastalColor;
-      }
-
-      return color;
+      return this.terrainColor.getColor(height, rain, temp);
     }
 
     // Get height depending upon the tile, from the TerrainHeightmap object
@@ -97,7 +80,7 @@ module EDEN {
         var x = (i % this.width) / this.width;
         var y = Math.floor(i / this.width) / this.height;
 
-        // 2D Heightmap Gradient
+        // Whittaker Gradient
         // var color: BABYLON.Color3 = this.terrainColor.get2DColor(x, y);
 
         // Diffuse Map
@@ -107,15 +90,9 @@ module EDEN {
         // var temp: number = this.terrainTemperature.getTemperatureNormalized(x, y);
         // var color: BABYLON.Color3 = new BABYLON.Color3(temp, temp, temp);
 
-        // Biome Gradient
-        // var height: number = this.terrainHeightmap.getHeightNormalized(x, y);
-        // var invHeight: number = (1 - (height*0.3));
-        // var rain: number = this.terrainRainmap.getRainfallNormalized(x, y) * invHeight;
-        // var temp: number = this.terrainTemperature.getTemperatureNormalized(x, y);
-        //
-        // var color: BABYLON.Color3;
-        // if(height < 0.51 || height > 0.65) color = this.getColor(x, y);
-        // else color = this.terrainColor.get2DColor(1-temp, 1-rain);
+        // Rain Gradient
+        // var rain: number = this.terrainRainmap.getRainfallNormalized(x, y);
+        // var color: BABYLON.Color3 = new BABYLON.Color3(rain, rain, rain);
 
         var idx = i*4;
 

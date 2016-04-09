@@ -24,8 +24,8 @@ module EDEN {
       this.prng = new Alea(this.seed);
 
       this.noise = new Noise({
-        amplitude: 1.0,
-        frequency: 0.004,
+        amplitude: 0.4,
+        frequency: 0.008,
         max: maxHeight,
         min: 0,
         octaves: 10,

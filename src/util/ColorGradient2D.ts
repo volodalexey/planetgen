@@ -35,10 +35,10 @@ module EDEN {
       });
     }
 
-    getColorForUV(u: number, v: number) {
+    getColor(u: number, v: number) {
       var x: number = Math.floor(u * (this.resolution - 1));
       var y: number = Math.floor(v * (this.resolution - 1));
-      
+
       return this.gradient[y][x];
     }
 
