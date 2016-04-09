@@ -2,7 +2,7 @@
 /// <reference path="../util/Alea.ts" />
 
 module EDEN {
-  export class TerrainHeightmap {
+  export class TerrainRainmap {
     prng: Alea;
     noise: Noise;
 
@@ -12,31 +12,31 @@ module EDEN {
     height: number;
     width: number;
 
-    maxHeight: number;
+    maxRain: number;
 
-    constructor(seed: string, maxHeight: number, height: number, width: number) {
+    constructor(seed: string, maxRain: number, height: number, width: number) {
       this.seed = seed;
       this.data = [];
       this.height = height;
       this.width = width;
-      this.maxHeight = maxHeight;
+      this.maxRain = maxRain;
 
       this.prng = new Alea(this.seed);
 
       this.noise = new Noise({
-        amplitude: 1.0,
-        frequency: 0.004,
-        max: maxHeight,
+        amplitude: 0.1,
+        frequency: 0.01,
+        max: maxRain,
         min: 0,
-        octaves: 10,
-        persistence: 0.5,
+        octaves: 30,
+        persistence: 0.3,
         random: this.prng.random
       });
 
-      this.generateHeightmap();
+      this.generateRainmap();
     }
 
-    generateHeightmap() {
+    generateRainmap() {
       for(var x = 0; x < this.width; x++) {
       	for(var y = 0; y < this.height; y++) {
           var s: number = x/this.width;
@@ -60,7 +60,7 @@ module EDEN {
       }
     }
 
-    getHeight(u: number, v: number) {
+    getRainfall(u: number, v: number) {
       var x: number = Math.floor(u * this.width);
       var y: number = Math.floor(v * this.height);
 
@@ -68,8 +68,8 @@ module EDEN {
       return Math.floor(this.data[idx]);
     }
 
-    getHeightNormalized(u: number, v: number) {
-      return this.getHeight(u, v) / this.maxHeight;
+    getRainfallNormalized(u: number, v: number) {
+      return this.getRainfall(u, v) / this.maxRain;
     }
   }
 }

@@ -45,7 +45,9 @@ module EDEN {
       this.gradient = new Gradient(this.height);
 
       this.gradient.addStop(0.0, this.minTemp);
+      this.gradient.addStop(0.2, this.minTemp);
       this.gradient.addStop(0.5, this.maxTemp);
+      this.gradient.addStop(0.8, this.minTemp);
       this.gradient.addStop(1.0, this.minTemp);
 
       this.gradient.calculate();
@@ -85,7 +87,10 @@ module EDEN {
     }
 
     getTemperatureNormalized(u: number, v: number) {
-      return (this.getTemperature(u,v) - this.minTemp) / (this.maxTemp - this.minTemp);
+      var data: number = (this.getTemperature(u,v) - this.minTemp) / (this.maxTemp - this.minTemp);
+      if(data < 0) data = 0;
+      else if(data > 1) data = 1;
+      return data;
     }
   }
 }

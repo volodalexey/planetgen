@@ -27,7 +27,7 @@ module EDEN {
     }
 
     getValue(index: number) {
-      return this.gradient[Math.floor(index * this.resolution)];
+      return this.gradient[Math.floor(index * (this.resolution - 1))];
     }
 
     calculate() {

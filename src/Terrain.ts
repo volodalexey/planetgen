@@ -2,6 +2,7 @@
 
 /// <reference path="terrain/TerrainColor.ts" />
 /// <reference path="terrain/TerrainHeightmap.ts" />
+/// <reference path="terrain/TerrainRainmap.ts" />
 /// <reference path="terrain/TerrainTemperature.ts" />
 
 module EDEN {
@@ -17,11 +18,15 @@ module EDEN {
     // Terrain Temperature Properties
     maxTemp: number = 40;
     minTemp: number = -10;
-    tempDistortion: number = 5;
+    tempDistortion: number = 15;
+
+    // Terrain Rainfall Properties
+    maxRain: number = 400;
 
     terrainColor: TerrainColor;
     terrainHeightmap: TerrainHeightmap;
-    temperatureData: TerrainTemperature;
+    terrainRainmap: TerrainRainmap;
+    terrainTemperature: TerrainTemperature;
 
     constructor(seed: string) {
       this.seed = seed;
@@ -30,13 +35,34 @@ module EDEN {
 
       this.terrainColor = new TerrainColor(this.maxHeight);
       this.terrainHeightmap = new TerrainHeightmap(this.seed, this.maxHeight, this.height, this.width);
-      this.temperatureData = new TerrainTemperature(this.seed, this.maxTemp, this.minTemp, this.tempDistortion, this.height, this.width);
+      this.terrainRainmap = new TerrainRainmap(this.seed + 'rain', this.maxRain, this.height, this.width);
+      this.terrainTemperature = new TerrainTemperature(this.seed + 'temp', this.maxTemp, this.minTemp, this.tempDistortion, this.height, this.width);
     }
 
     // Get color depending upon the tile from the TerrainColor object
     getColor(u: number, v: number) {
+      // var height: number = this.terrainHeightmap.getHeight(u, v);
+      // return this.terrainColor.getColor(height);
+
       var height: number = this.terrainHeightmap.getHeight(u, v);
-      return this.terrainColor.getColor(height);
+      var heightNorm: number = height / this.maxHeight;
+      var invHeight: number = (1 - (heightNorm*0.3));
+      var rain: number = this.terrainRainmap.getRainfallNormalized(u, v) * invHeight;
+      var temp: number = this.terrainTemperature.getTemperatureNormalized(u, v);
+
+      var color: BABYLON.Color3 = this.terrainColor.get2DColor(1-temp, 1-rain);;
+      if(heightNorm <= 0.505 || heightNorm > 0.60) {
+        var coastalColor: BABYLON.Color3 = this.terrainColor.getColor(height);
+        if(heightNorm >= 0.5 && heightNorm < 0.60) {
+          color = BABYLON.Color3.Lerp(coastalColor, color, 0.5);
+        }
+        else if(heightNorm > 0.60) {
+          color = BABYLON.Color3.Lerp(color, coastalColor, (heightNorm - 0.6) * 8.3 );
+        }
+        else color = coastalColor;
+      }
+
+      return color;
     }
 
     // Get height depending upon the tile, from the TerrainHeightmap object
@@ -74,12 +100,22 @@ module EDEN {
         // 2D Heightmap Gradient
         // var color: BABYLON.Color3 = this.terrainColor.get2DColor(x, y);
 
-        // 1D Heightmap Colored with Gradient
-        // var color: BABYLON.Color3 = this.getColor(x, y);
+        // Diffuse Map
+        var color: BABYLON.Color3 = this.getColor(x, y);
 
         // Temperature Gradient
-        var temp: number = this.temperatureData.getTemperatureNormalized(x, y);
-        var color: BABYLON.Color3 = new BABYLON.Color3(temp, temp, temp);
+        // var temp: number = this.terrainTemperature.getTemperatureNormalized(x, y);
+        // var color: BABYLON.Color3 = new BABYLON.Color3(temp, temp, temp);
+
+        // Biome Gradient
+        // var height: number = this.terrainHeightmap.getHeightNormalized(x, y);
+        // var invHeight: number = (1 - (height*0.3));
+        // var rain: number = this.terrainRainmap.getRainfallNormalized(x, y) * invHeight;
+        // var temp: number = this.terrainTemperature.getTemperatureNormalized(x, y);
+        //
+        // var color: BABYLON.Color3;
+        // if(height < 0.51 || height > 0.65) color = this.getColor(x, y);
+        // else color = this.terrainColor.get2DColor(1-temp, 1-rain);
 
         var idx = i*4;
 
@@ -92,12 +128,12 @@ module EDEN {
       canvas.putImageData(diffuseData,0,0);
 
       // Resize the output canvas to 256 pixels so that we do not take up too much screen real estate.
-      var tmpImage = new Image();
-      tmpImage.src = canv_element.toDataURL("image/png");
-      canvas.clearRect(0, 0, this.width, this.height);
-      canv_element.width = canv_element.width / 2;
-      canv_element.height = canv_element.height / 2;
-      canvas.drawImage(tmpImage, 0, 0, 256, 256);
+      // var tmpImage = new Image();
+      // tmpImage.src = canv_element.toDataURL("image/png");
+      // canvas.clearRect(0, 0, this.width, this.height);
+      // canv_element.width = canv_element.width / 2;
+      // canv_element.height = canv_element.height / 2;
+      // canvas.drawImage(tmpImage, 0, 0, 256, 256);
     }
   }
 }
