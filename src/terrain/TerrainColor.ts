@@ -14,7 +14,7 @@ module EDEN {
     terrainGradient2D: ColorGradient2D;
 
     options: TerrainColorOptions = {
-      PARCHMENT_FACTOR: 0.3
+      PARCHMENT_FACTOR: 0.0
     }
 
     maxHeight: number;
