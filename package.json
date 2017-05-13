@@ -1,0 +1,16 @@
+{
+  "name": "planetgen",
+  "version": "1.0.0",
+  "description": "Procedural Hex Planet Generation",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "node-static": "0.7.9",
+    "typescript": "2.3.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "static": "static . -p 7887",
+    "build": "tsc --out game.js src/Game.ts"
+  }
+}
